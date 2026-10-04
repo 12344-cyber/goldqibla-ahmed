@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>GoldQibla v10</title>
+
+<style>
+:root{
+--gold:#ffc107;--gold-bright:#ffeb3b;--gold-dark:#b8860b;
+--green:#00e676;--red:#ff1744;--blue:#29b6f6;
+--bg:#000;--border:#1a1a1a;--text:#fff;--muted:#6b7280
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+touch-action:none;position:fixed}
+body{display:flex;flex-direction:column}
+
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;
+background:rgba(10,10,10,.95);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;
+gap:4px;flex-wrap:wrap}
+.status-pill{display:flex;align-items:center;gap:4px;padding:3px 8px;background:rgba(255,255,255,.05);
+border-radius:20px;font-size:10px;font-weight:700;border:1px solid var(--border)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.status-dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+.status-dot.warn{background:var(--gold);animation:blink 1s infinite}
+.status-dot.err{background:var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.status-pill .val{color:var(--gold)}
+
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+position:relative;padding:6px;min-height:0;overflow:hidden}
+.compass-wrap{position:relative;flex:1;width:100%;max-width:300px;max-height:300px;aspect-ratio:1/1;
+display:flex;align-items:center;justify-content:center;margin:0 auto;min-height:0;z-index:2}
+.compass-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ring-outer{fill:none;stroke:rgba(255,193,7,.15);stroke-width:1}
+.ring-mid{fill:none;stroke:rgba(255,193,7,.08);stroke-width:2;stroke-dasharray:2 6}
+.accuracy-circle{fill:rgba(41,182,246,.08);stroke:rgba(41,182,246,.6);stroke-width:1;
+stroke-dasharray:3 3;transition:all .3s}
+.tick{stroke:rgba(255,255,255,.2);stroke-width:1;stroke-linecap:round}
+.tick.major{stroke:rgba(255,193,7,.5);stroke-width:2}
+.tick-label{fill:rgba(255,255,255,.4);font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:middle}
+.tick-label.north{fill:#ff5252}
+.arrow-group{transform-origin:150px 150px;transform-box:view-box;will-change:transform}
+.arrow-body{fill:url(#arrowGradient);filter:drop-shadow(0 0 12px rgba(255,193,7,.8)) drop-shadow(0 0 24px rgba(255,193,7,.4))}
+.arrow-highlight{fill:url(#highlightGradient);opacity:.7}
+.arrow-tail{fill:rgba(255,193,7,.15);stroke:rgba(255,193,7,.4);stroke-width:1.5}
+.center-dot{fill:var(--bg);stroke:var(--gold);stroke-width:3;filter:drop-shadow(0 0 6px var(--gold))}
+.center-inner{fill:var(--gold)}
+
+.telemetry{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:100%;max-width:340px;
+margin-top:6px;padding:6px 4px;background:rgba(255,255,255,.03);border:1px solid var(--border);
+border-radius:10px;flex-shrink:0}
+.tel-item{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
+.tel-lbl{font-size:8px;color:var(--muted);font-weight:700;letter-spacing:.3px}
+.tel-val{font-size:12px;font-weight:900;color:var(--gold-bright);font-variant-numeric:tabular-nums;direction:ltr}
+.tel-val.err{color:var(--red)}.tel-val.warn{color:var(--gold)}.tel-val.ok{color:var(--green)}
+
+.readout{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:6px;z-index:5}
+.target-name{display:flex;align-items:center;gap:6px;padding:5px 16px;background:rgba(255,193,7,.12);
+border:1.5px solid rgba(255,193,7,.4);border-radius:20px;font-size:14px;font-weight:800;
+color:var(--gold-bright);max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+min-height:30px;transition:all .3s}
+.target-name.empty{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);
+color:var(--muted);font-weight:600;font-size:12px}
+.target-name .icon{font-size:16px;flex-shrink:0}
+.target-name .text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.distance-big{display:flex;align-items:baseline;gap:6px;line-height:1}
+.distance-num{font-size:clamp(46px,14vw,80px);font-weight:900;color:var(--gold);letter-spacing:-3px;
+text-shadow:0 0 20px rgba(255,193,7,.6);font-variant-numeric:tabular-nums}
+.distance-unit{font-size:clamp(18px,5vw,26px);font-weight:700;color:var(--gold-bright);opacity:.8}
+.bearing-info{display:flex;align-items:center;gap:12px;padding:4px 14px;background:rgba(255,193,7,.08);
+border-radius:20px;border:1px solid rgba(255,193,7,.2)}
+.bearing-num{font-size:18px;font-weight:900;color:var(--gold-bright);font-variant-numeric:tabular-nums}
+.bearing-dir{font-size:13px;font-weight:700;color:#ccc}
+.guidance-state{margin-top:6px;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:800;
+letter-spacing:.5px;transition:all .3s;background:rgba(0,230,118,.15);color:var(--green);
+border:1px solid rgba(0,230,118,.3);text-align:center;min-width:200px}
+.guidance-state.warn{background:rgba(255,193,7,.15);color:var(--gold);border-color:rgba(255,193,7,.3)}
+.guidance-state.err{background:rgba(255,23,68,.15);color:var(--red);border-color:rgba(255,23,68,.3)}
+
+.bottom-bar{display:flex;gap:8px;padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+background:rgba(10,10,10,.95);border-top:1px solid var(--border);flex-shrink:0;z-index:10}
+.btn{flex:1;min-height:70px;background:rgba(255,255,255,.04);border:1px solid var(--border);
+border-radius:14px;color:var(--text);cursor:pointer;display:flex;flex-direction:column;
+align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:800;transition:all .15s;
+padding:6px;min-width:0}.btn:active{transform:scale(.95)}
+.btn .icon{font-size:24px;line-height:1}.btn .lbl{font-size:11px;white-space:nowrap}
+.btn.save{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;border:none;
+box-shadow:0 6px 18px rgba(255,193,7,.35)}
+.btn.whatsapp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;
+box-shadow:0 6px 18px rgba(37,211,102,.35)}
+.btn.list{background:linear-gradient(135deg,#29b6f6,#0277bd);color:#fff;border:none;
+box-shadow:0 6px 18px rgba(41,182,246,.35)}
+
+.panel{position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:1000;display:flex;
+flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.panel.show{transform:translateY(0)}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;
+border-bottom:1px solid var(--border);flex-shrink:0;gap:8px}
+.panel-title{font-size:16px;font-weight:800;color:var(--gold);flex:1}
+.panel-add-manual{height:38px;padding:0 14px;border-radius:19px;background:rgba(255,193,7,.15);
+border:1.5px solid var(--gold);color:var(--gold);font-size:13px;font-weight:800;cursor:pointer;
+display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit}
+.panel-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);
+border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;
+display:flex;align-items:center;justify-content:center;font-family:inherit}
+.panel-body{flex:1;overflow-y:auto;padding:12px 16px}
+
+.waypoint-item{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,255,255,.03);
+border-radius:12px;margin-bottom:10px;border-right:4px solid var(--muted);cursor:pointer;transition:all .2s}
+.waypoint-item.gold{border-color:var(--gold)}.waypoint-item.gold-found{border-color:#ffd700;
+background:linear-gradient(90deg,rgba(255,215,0,.15),rgba(255,255,255,.03))}
+.waypoint-item.water{border-color:var(--blue)}.waypoint-item.car{border-color:var(--green)}
+.waypoint-item.home{border-color:#9c27b0}.waypoint-item.hole{border-color:#ff5722}
+.wp-icon{font-size:26px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+background:rgba(255,255,255,.05);border-radius:10px;flex-shrink:0}
+.wp-info{flex:1;min-width:0}.wp-name{font-size:13px;font-weight:800;color:var(--text);
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.wp-meta{font-size:10px;color:var(--muted);font-family:monospace;direction:ltr;margin-bottom:3px}
+.wp-dist{font-size:12px;font-weight:800;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;direction:ltr}
+.gold-badge{display:inline-block;font-size:9px;background:var(--gold);color:#000;padding:1px 6px;
+border-radius:6px;margin-right:3px;font-weight:900}
+.wp-copy-btn{padding:8px 14px;background:linear-gradient(135deg,var(--blue),#0277bd);color:#fff;
+border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;
+min-width:70px;display:flex;align-items:center;justify-content:center;gap:3px;font-family:inherit}
+.wp-del-btn{width:32px;height:32px;border-radius:8px;background:rgba(255,23,68,.15);
+border:none;color:var(--red);font-size:14px;cursor:pointer;font-family:inherit}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .big-icon{font-size:60px;margin-bottom:12px}
+
+.dialog-bg{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:none;
+align-items:center;justify-content:center;padding:20px}.dialog-bg.show{display:flex}
+.dialog{background:#0f0f0f;border:2px solid var(--gold);border-radius:16px;padding:20px;width:100%;
+max-width:380px;text-align:center;max-height:90vh;overflow-y:auto}
+.dialog h3{color:var(--gold);font-size:15px;margin-bottom:8px}.dialog .quality{font-size:11px;
+color:var(--muted);margin-bottom:14px;line-height:1.5}
+.field-group{text-align:right;margin-bottom:12px}.field-group label{display:block;font-size:12px;
+font-weight:700;color:var(--gold);margin-bottom:5px;padding-right:4px}
+.field-group input{width:100%;padding:14px 12px;border-radius:10px;border:2px solid var(--border);
+background:#000;color:#fff;font-size:16px;outline:none;font-family:inherit;text-align:right}
+.field-group input.numeric{font-family:monospace;direction:ltr;text-align:left;font-size:17px}
+.field-group input:focus{border-color:var(--gold)}.field-group input::placeholder{color:#3a3a3a}
+.dialog-buttons{display:flex;gap:8px}.dialog-buttons button{flex:1;padding:14px;border-radius:10px;
+border:none;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit}
+.dialog-buttons .cancel{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border)}
+.dialog-buttons .save-btn{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000}
+.dialog-buttons .save-btn:disabled{opacity:.6;cursor:not-allowed}
+.save-progress{display:none;margin-bottom:14px;background:rgba(255,255,255,.05);border-radius:8px;
+overflow:hidden;position:relative;height:26px;border:1px solid var(--border)}
+.save-progress.show{display:block}.save-progress-bar{height:100%;width:0%;
+background:linear-gradient(90deg,var(--gold-dark),var(--gold),var(--gold-bright));transition:width .3s}
+.save-progress-bar.good{background:linear-gradient(90deg,#00c853,var(--green))}
+.save-progress-bar.warn{background:linear-gradient(90deg,#ff8f00,var(--gold))}
+.save-progress-bar.bad{background:linear-gradient(90deg,#c62828,var(--red))}
+.save-progress-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+font-size:12px;font-weight:900;color:#000}
+.toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);
+background:rgba(20,20,20,.98);border:1px solid var(--gold);color:var(--gold);padding:12px 24px;
+border-radius:24px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;
+z-index:5000;max-width:92%;text-align:center;white-space:pre-line;line-height:1.4}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:var(--red);color:var(--red)}.toast.ok{border-color:var(--green);color:var(--green)}
+.toast.warn{border-color:var(--gold);color:var(--gold-bright)}
+.compass-status{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;
+color:var(--muted);letter-spacing:1px;padding:2px 8px;background:rgba(0,0,0,.6);border-radius:10px;
+white-space:nowrap}.compass-status.warn{color:var(--gold)}.compass-status.err{color:var(--red)}
+.compass-status.gps{color:var(--green);font-weight:800}
+
+@media(max-height:700px){
+.compass-wrap{max-width:220px;max-height:220px}.distance-num{font-size:44px}
+.btn{min-height:60px}.btn .icon{font-size:20px}.telemetry{margin-top:4px;padding:4px}
+.tel-val{font-size:11px}}
+@media(max-width:340px){
+.distance-num{font-size:42px}.btn .lbl{font-size:9px}.tel-lbl{font-size:7px}.tel-val{font-size:10px}}
+</style>
+</head>
+
+<body>
+
+<div class="top-bar">
+<div class="status-pill"><span class="status-dot" id="gpsDot"></span><span>GPS</span><span class="val" id="gpsVal">--</span></div>
+<div class="status-pill"><span class="status-dot" id="compassDot"></span><span>بوصلة</span><span class="val" id="compassVal">--</span></div>
+<div class="status-pill"><span class="status-dot" id="declDot"></span><span>🧭</span><span class="val" id="declVal">--</span></div>
+</div>
+
+<div class="stage">
+<div class="compass-wrap">
+<svg class="compass-svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+<defs>
+<linearGradient id="arrowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#ffeb3b"></stop><stop offset="50%" stop-color="#ffc107"></stop><stop offset="100%" stop-color="#b8860b"></stop>
+</linearGradient>
+<linearGradient id="highlightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="rgba(255,255,255,.7)"></stop><stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
+</linearGradient>
+</defs>
+<circle class="ring-outer" cx="150" cy="150" r="140"></circle>
+<circle class="ring-mid" cx="150" cy="150" r="120"></circle>
+<circle class="accuracy-circle" id="accuracyCircle" cx="150" cy="150" r="0" style="display:none"></circle>
+<g id="ticks"></g>
+<g class="arrow-group" id="arrowGroup">
+<circle class="arrow-tail" cx="150" cy="150" r="22"></circle>
+<path class="arrow-body" d="M150 30 L190 120 L165 115 L165 155 L135 155 L135 115 L110 120 Z"></path>
+<path class="arrow-highlight" d="M150 45 L175 115 L158 110 L155 145 L150 145 L150 45 Z"></path>
+</g>
+<circle class="center-dot" cx="150" cy="150" r="12"></circle>
+<circle class="center-inner" cx="150" cy="150" r="4"></circle>
+</svg>
+<div class="compass-status" id="compassStatus">جاري البحث...</div>
+</div>
+
+<div class="telemetry">
+<div class="tel-item"><span class="tel-lbl">⛰️ ارتفاع</span><span class="tel-val" id="telAlt">--</span></div>
+<div class="tel-item"><span class="tel-lbl">🏃 سرعة</span><span class="tel-val" id="telSpd">--</span></div>
+<div class="tel-item"><span class="tel-lbl">🧭 GPS</span><span class="tel-val" id="telHdg">--</span></div>
+<div class="tel-item"><span class="tel-lbl">⏱️ تحديث</span><span class="tel-val" id="telDt">--</span></div>
+</div>
+
+<div class="readout">
+<div class="target-name empty" id="targetName"><span class="icon">📍</span><span class="text">اختر وجهة من القائمة</span></div>
+<div class="distance-big"><span class="distance-num" id="distanceNum">--</span><span class="distance-unit" id="distanceUnit">م</span></div>
+<div class="bearing-info"><span>🧭 اتجاه</span><span class="bearing-num" id="bearingNum">---°</span><span class="bearing-dir" id="bearingDir">--</span></div>
+<div class="guidance-state" id="guidanceState">📍 احفظ موقعاً أو أضف يدوياً</div>
+</div>
+</div>
+
+<div class="bottom-bar">
+<button class="btn save" id="btnSaveHere"><span class="icon">📍</span><span class="lbl">حفظ</span></button>
+<button class="btn whatsapp" id="btnShareWA"><span class="icon">📲</span><span class="lbl">مشاركة</span></button>
+<button class="btn list" id="btnList"><span class="icon">📋</span><span class="lbl">قائمة المواقع</span></button>
+</div>
+
+<div class="panel" id="waypointsPanel">
+<div class="panel-header">
+<div class="panel-title">📍 المواقع المحفوظة</div>
+<button class="panel-add-manual" id="btnAddManual">✏️ إدخال يدوي</button>
+<button class="panel-close" id="panelClose">✕</button>
+</div>
+<div class="panel-body" id="waypointsList"></div>
+</div>
+
+<div class="dialog-bg" id="saveDialog">
+<div class="dialog">
+<h3>✏️ احفظ موقعك</h3>
+<div class="quality" id="saveQuality">جاري القراءة...</div>
+<div class="save-progress" id="saveProgress">
+<div class="save-progress-bar" id="saveProgressBar"></div>
+<div class="save-progress-text" id="saveProgressText">0/25</div>
+</div>
+<div class="field-group"><label>📍 اسم الموقع</label><input type="text" id="saveName" placeholder="اكتب اسم الموقع..." maxlength="30"></div>
+<div class="dialog-buttons"><button class="cancel" id="saveCancel">إلغاء</button><button class="save-btn" id="saveConfirm">💾 حفظ</button></div>
+</div>
+</div>
+
+<div class="dialog-bg" id="manualDialog">
+<div class="dialog">
+<h3>✏️ إدخال إحداثيات يدوياً</h3>
+<div class="quality">الصق الإحداثيات من Google Maps أو أي مصدر</div>
+<div class="field-group"><label>📍 اسم الموقع</label><input type="text" id="manualName" placeholder="مثال: بئر ماء قديم" maxlength="30"></div>
+<div class="field-group"><label>🌐 خط العرض (Latitude)</label><input type="text" id="manualLat" class="numeric" placeholder="مثال: 21.123456" inputmode="decimal"></div>
+<div class="field-group"><label>🌐 خط الطول (Longitude)</label><input type="text" id="manualLng" class="numeric" placeholder="مثال: -11.567890" inputmode="decimal"></div>
+<div class="dialog-buttons"><button class="cancel" id="manualCancel">إلغاء</button><button class="save-btn" id="manualConfirm">💾 حفظ</button></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+const $=id=>document.getElementById(id);
+
+const CFG={
+KALMAN_Q:2e-8,
+MIN_ACCURACY_SAVE:25,
+SAMPLES_NEEDED:25,
+MIN_SAMPLES_NEEDED:10,
+SAMPLE_INTERVAL:500,
+MAX_SAMPLE_TIME:30000,
+
+COMPASS_ALPHA_SLOW:.12,
+COMPASS_ALPHA_FAST:.55,
+COMPASS_MOVE_THRESHOLD:18,
+
+MAGNETIC_DECLINATION:-4.5,
+
+WAYPOINTS_KEY:'gq_waypoints_v100',
+DECL_KEY:'gq_decl_v100',
+
+ACC_CIRCLE_REF:20,
+
+MAX_JUMP_METERS:20,
+MAX_SPEED_JUMP:60,
+MAX_SAMPLE_SPEED:60,
+
+STABILITY_LIMIT:10,
+
+MAX_CONSECUTIVE_REJECTS:6,
+
+SPEED_ENTER_GPS:2.5,
+SPEED_EXIT_GPS:1.5,
+
+GPS_HEADING_FILTER:.30,
+
+ARROW_DEADZONE:.8,
+ARROW_SMOOTHING:.45
+};
+
+const STATE={
+pos:null,
+rawPos:null,
+accuracy:99,
+speed:0,
+
+kalman:{lat:null,lng:null,P:1,init:false},
+
+accuracyHistory:[],
+positionHistory:[],
+stability:99,
+
+compassRaw:null,
+compassSmooth:null,
+compassPrev:null,
+compassPrevTime:0,
+compassCalibrated:false,
+compassEvents:0,
+
+target:null,
+targetBearing:null,
+targetDistance:null,
+
+waypoints:[],
+watchId:null,
+rafId:null,
+
+saveSamples:[],
+saveInProgress:false,
+
+selectedCategory:'gold',
+foundGold:false,
+selectedManualCategory:'gold',
+
+declFetched:false,
+
+rejectedCount:0,
+consecutiveRejects:0,
+
+headingMode:'compass',
+
+gps:{
+altitude:null,
+speed:null,
+heading:null,
+altAcc:null,
+lastTimestamp:null,
+timeSinceUpdate:0,
+distances:[],
+timeDiffs:[]
+}
+};
+
+let gpsHeadingSmooth=null;
+let compassPermissionRequested=false;
+let compassListenersStarted=false;
+let toastTimer=null;
+
+/* ═══════════════════════════════════════════
+   🔊 نظام الصوت - ملفات MP3
+   ═══════════════════════════════════════════ */
+const AUDIO={
+files:{
+start:'sounds/start.mp3',
+approaching:'sounds/approaching.mp3',
+reached:'sounds/reached.mp3',
+deviated:'sounds/deviated.mp3',
+back:'sounds/back.mp3',
+passed:'sounds/passed.mp3',
+cancel:'sounds/cancel.mp3'
+},
+cache:{},
+lastPlay:{},
+lastMinDist:null,
+hasReached:false,
+lastZone:null,
+lastDeviationState:null,
+enabled:true,
+volume:1.0,
+initialized:false
+};
+
+function initAudio(){
+if(AUDIO.initialized)return;
+AUDIO.initialized=true;
+
+Object.keys(AUDIO.files).forEach(key=>{
+try{
+const audio=new Audio(AUDIO.files[key]);
+audio.preload='auto';
+audio.volume=AUDIO.volume;
+AUDIO.cache[key]=audio;
+}catch(e){}
+});
+}
+
+function playSound(key,minIntervalMs=2000){
+if(!AUDIO.enabled)return;
+
+const now=Date.now();
+const last=AUDIO.lastPlay[key]||0;
+if(now-last<minIntervalMs)return;
+AUDIO.lastPlay[key]=now;
+
+const audio=AUDIO.cache[key];
+if(!audio)return;
+
+try{
+audio.currentTime=0;
+audio.volume=AUDIO.volume;
+const p=audio.play();
+if(p&&p.catch){
+p.catch(err=>{
+console.warn('Audio play failed:',err);
+const newAudio=new Audio(AUDIO.files[key]);
+newAudio.volume=AUDIO.volume;
+AUDIO.cache[key]=newAudio;
+newAudio.play().catch(()=>{});
+});
+}
+}catch(e){}
+}
+
+function resumeAudio(){}
+
+function soundStart(){playSound('start',3000);}
+function soundReached(){playSound('reached',5000);}
+function soundApproaching(){playSound('approaching',8000);}
+function soundDeviated(){playSound('deviated',6000);}
+function soundBackOnTrack(){playSound('back',5000);}
+function soundPassed(){playSound('passed',8000);}
+function soundCancelTarget(){playSound('cancel',2000);}
+
+function updateAudioState(){
+if(!STATE.target||!STATE.pos){
+AUDIO.lastMinDist=null;
+AUDIO.hasReached=false;
+AUDIO.lastZone=null;
+AUDIO.lastDeviationState=null;
+return;
+}
+
+const d=STATE.targetDistance;
+if(d===null||!Number.isFinite(d))return;
+
+if(d<=10){
+if(!AUDIO.hasReached){
+AUDIO.hasReached=true;
+AUDIO.lastZone='reached';
+soundReached();
+if(navigator.vibrate)navigator.vibrate([200,80,200,80,400]);
+}
+AUDIO.lastMinDist=d;
+return;
+}
+
+if(d<=30&&AUDIO.lastZone!=='approaching'&&AUDIO.lastZone!=='reached'){
+AUDIO.lastZone='approaching';
+soundApproaching();
+if(navigator.vibrate)navigator.vibrate([80,50,80]);
+}else if(d>35&&AUDIO.lastZone==='approaching'){
+AUDIO.lastZone=null;
+}
+
+if(AUDIO.lastMinDist!==null){
+const passed=d>AUDIO.lastMinDist+8&&AUDIO.lastMinDist<=40&&d>25;
+if(passed&&AUDIO.lastZone!=='passed'){
+AUDIO.lastZone='passed';
+soundPassed();
+if(navigator.vibrate)navigator.vibrate([300,100,300]);
+}
+}
+
+if(AUDIO.lastMinDist===null||d<AUDIO.lastMinDist){
+AUDIO.lastMinDist=d;
+}
+
+const heading=getActiveHeading();
+if(heading===null)return;
+
+const diff=Math.abs(angleDiff(STATE.targetBearing,heading));
+const deviated=diff>60;
+
+if(deviated&&AUDIO.lastDeviationState!=='deviated'){
+AUDIO.lastDeviationState='deviated';
+soundDeviated();
+}else if(!deviated&&diff<30&&AUDIO.lastDeviationState==='deviated'){
+AUDIO.lastDeviationState='onTrack';
+soundBackOnTrack();
+}else if(diff<20){
+AUDIO.lastDeviationState='onTrack';
+}
+}
+/* ═══════════════════════════════════════════ */
+
+function toast(msg,dur=2500,type=''){
+const el=$('toast');
+el.textContent=msg;
+el.className='toast show'+(type?' '+type:'');
+clearTimeout(toastTimer);
+toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+function haversine(lat1,lng1,lat2,lng2){
+const R=6371008.8,toRad=d=>d*Math.PI/180;
+const dLat=toRad(lat2-lat1),dLng=toRad(lng2-lng1);
+const a=Math.sin(dLat/2)**2+
+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function bearing(lat1,lng1,lat2,lng2){
+const toRad=d=>d*Math.PI/180,toDeg=r=>r*180/Math.PI;
+const dLng=toRad(lng2-lng1);
+const y=Math.sin(dLng)*Math.cos(toRad(lat2));
+const x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-
+Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(dLng);
+return(toDeg(Math.atan2(y,x))+360)%360;
+}
+
+function dirName(deg){
+deg=((deg%360)+360)%360;
+const names=['شمال','شمال شرق','شرق','جنوب شرق','جنوب','جنوب غرب','غرب','شمال غرب'];
+const idx=Math.floor((deg+22.5)/45)%8;
+return names[idx];
+}
+
+function avg(arr){
+return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
+}
+
+function median(arr){
+if(!arr.length)return 0;
+const s=arr.slice().sort((a,b)=>a-b),m=Math.floor(s.length/2);
+return s.length%2?s[m]:(s[m-1]+s[m])/2;
+}
+
+function stdDev(arr){
+if(arr.length<2)return 0;
+const m=avg(arr);
+return Math.sqrt(avg(arr.map(v=>(v-m)**2)));
+}
+
+function angleDiff(a,b){
+let d=(a-b+540)%360-180;
+return d;
+}
+
+function angleAdd(a,b){
+return((a+b)%360+360)%360;
+}
+
+function kalmanUpdate(lat,lng,accuracy){
+const k=STATE.kalman;
+
+if(!k.init){
+k.lat=lat;
+k.lng=lng;
+k.P=Math.max(1e-10,(accuracy*accuracy)/1e6);
+k.init=true;
+return{lat,lng};
+}
+
+const R=Math.max(1e-10,(accuracy*accuracy)/1e6);
+const Q=CFG.KALMAN_Q*(1+Math.min(accuracy,50)/20);
+
+k.P+=Q;
+
+const K=k.P/(k.P+R);
+
+k.lat+=K*(lat-k.lat);
+k.lng+=K*(lng-k.lng);
+
+k.P=(1-K)*k.P;
+
+return{lat:k.lat,lng:k.lng};
+}
+
+async function fetchMagneticDeclination(lat,lng){
+try{
+const url=
+`https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat.toFixed(4)}&lon1=${lng.toFixed(4)}&resultFormat=json`;
+
+const resp=await fetch(url,{mode:'cors'});
+
+if(!resp.ok)throw new Error('HTTP '+resp.status);
+
+const data=await resp.json();
+
+if(data.result&&data.result[0]&&typeof data.result[0].declination==='number'){
+const decl=data.result[0].declination;
+
+CFG.MAGNETIC_DECLINATION=decl;
+
+localStorage.setItem(
+CFG.DECL_KEY,
+JSON.stringify({
+value:decl,
+lat,
+lng,
+t:Date.now()
+})
+);
+
+updateDeclinationDisplay();
+return decl;
+}
+}catch(e){
+console.warn('فشل جلب الانحراف المغناطيسي:',e.message);
+}
+return null;
+}
+
+function loadCachedDeclination(){
+try{
+const c=JSON.parse(localStorage.getItem(CFG.DECL_KEY));
+
+if(c&&typeof c.value==='number'){
+CFG.MAGNETIC_DECLINATION=c.value;
+updateDeclinationDisplay();
+return true;
+}
+}catch(e){}
+return false;
+}
+
+function updateDeclinationDisplay(){
+const d=CFG.MAGNETIC_DECLINATION;
+
+$('declVal').textContent=d.toFixed(1)+'°';
+$('declDot').className='status-dot '+(Math.abs(d)>.5?'on':'');
+}
+
+function startGPS(){
+if(!navigator.geolocation){
+setStatus('gps','err','غير مدعوم');
+toast('هذا الجهاز/المتصفح لا يدعم GPS','4000','err');
+return;
+}
+
+setStatus('gps','warn','بحث...');
+
+try{
+STATE.watchId=navigator.geolocation.watchPosition(
+onGPS,
+onGPSError,
+{
+enableHighAccuracy:true,
+maximumAge:0,
+timeout:30000
+}
+);
+}catch(e){
+setStatus('gps','err','خطأ');
+}
+}
+
+function onGPS(pos){
+
+if(!pos||!pos.coords)return;
+
+const lat=Number(pos.coords.latitude);
+const lng=Number(pos.coords.longitude);
+const acc=Math.max(1,Number(pos.coords.accuracy)||50);
+const nowTs=Number(pos.timestamp)||Date.now();
+
+if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+
+const g=STATE.gps;
+
+const previousRaw=STATE.rawPos;
+
+g.altitude=pos.coords.altitude;
+g.speed=Number.isFinite(pos.coords.speed)?Math.max(0,pos.coords.speed):null;
+g.heading=Number.isFinite(pos.coords.heading)?pos.coords.heading:null;
+g.altAcc=pos.coords.altitudeAccuracy;
+
+g.timeSinceUpdate=
+g.lastTimestamp?Math.max(0,nowTs-g.lastTimestamp):0;
+
+g.lastTimestamp=nowTs;
+
+STATE.speed=g.speed||0;
+
+if(previousRaw){
+
+const rawDist=haversine(
+previousRaw.lat,
+previousRaw.lng,
+lat,
+lng
+);
+
+const dt=g.timeSinceUpdate>0?g.timeSinceUpdate/1000:1;
+
+const impliedSpeed=rawDist/dt;
+
+if(
+rawDist>CFG.MAX_JUMP_METERS &&
+impliedSpeed>CFG.MAX_SAMPLE_SPEED
+){
+STATE.rejectedCount++;
+return;
+}
+
+if(rawDist<200){
+g.distances.push(rawDist);
+if(g.distances.length>30)g.distances.shift();
+}
+}
+
+STATE.rawPos={lat,lng,accuracy:acc,t:nowTs};
+
+if(g.timeSinceUpdate>0&&g.timeSinceUpdate<60000){
+g.timeDiffs.push(g.timeSinceUpdate);
+if(g.timeDiffs.length>30)g.timeDiffs.shift();
+}
+
+const smoothed=kalmanUpdate(lat,lng,acc);
+
+STATE.pos={
+lat:smoothed.lat,
+lng:smoothed.lng
+};
+
+STATE.accuracy=acc;
+
+STATE.accuracyHistory.push(acc);
+if(STATE.accuracyHistory.length>20)
+STATE.accuracyHistory.shift();
+
+STATE.positionHistory.push({
+lat:smoothed.lat,
+lng:smoothed.lng,
+accuracy:acc,
+t:nowTs
+});
+
+if(STATE.positionHistory.length>20)
+STATE.positionHistory.shift();
+
+STATE.stability=calculatePositionStability();
+
+setStatus(
+'gps',
+acc<=8?'on':acc<=20?'warn':'err',
+'±'+Math.round(acc)+'م'
+);
+
+if(!STATE.declFetched){
+STATE.declFetched=true;
+fetchMagneticDeclination(smoothed.lat,smoothed.lng).then(d=>{
+if(d===null){
+setTimeout(()=>{STATE.declFetched=false;},10000);
+}
+});
+}
+
+updateTelemetry();
+updateAccuracyCircle();
+updateReadout();
+updateArrow();
+
+if($('waypointsPanel').classList.contains('show'))
+renderWaypoints();
+}
+
+function calculatePositionStability(){
+
+const h=STATE.positionHistory;
+
+if(h.length<3)return 99;
+
+const last=h.slice(-10);
+
+const centerLat=avg(last.map(p=>p.lat));
+const centerLng=avg(last.map(p=>p.lng));
+
+const distances=last.map(p=>
+haversine(p.lat,p.lng,centerLat,centerLng)
+);
+
+return Math.sqrt(avg(distances.map(d=>d*d)));
+}
+
+function updateTelemetry(){
+
+const g=STATE.gps;
+
+const altEl=$('telAlt');
+
+if(g.altitude!==null&&Number.isFinite(g.altitude)){
+altEl.textContent=Math.round(g.altitude)+'م';
+altEl.className='tel-val';
+}else{
+altEl.textContent='--';
+altEl.className='tel-val';
+}
+
+const spdEl=$('telSpd');
+
+if(g.speed!==null&&Number.isFinite(g.speed)){
+const kmh=g.speed*3.6;
+spdEl.textContent=kmh<10?kmh.toFixed(1):Math.round(kmh);
+spdEl.className='tel-val '+(kmh>2?'warn':'ok');
+}else{
+spdEl.textContent='0';
+spdEl.className='tel-val ok';
+}
+
+const hdgEl=$('telHdg');
+
+if(g.heading!==null&&Number.isFinite(g.heading)){
+hdgEl.textContent=Math.round(g.heading)+'°';
+hdgEl.className='tel-val';
+}else{
+hdgEl.textContent='--';
+hdgEl.className='tel-val';
+}
+
+const dtEl=$('telDt');
+
+if(g.timeSinceUpdate>0){
+const s=g.timeSinceUpdate/1000;
+
+dtEl.textContent=s<10?s.toFixed(1)+'ث':Math.round(s)+'ث';
+
+dtEl.className='tel-val '+
+(g.timeSinceUpdate<2000?'ok':
+g.timeSinceUpdate<5000?'warn':'err');
+}else{
+dtEl.textContent='--';
+dtEl.className='tel-val';
+}
+}
+
+function updateAccuracyCircle(){
+
+const circle=$('accuracyCircle');
+
+if(!STATE.pos||STATE.accuracy>100){
+circle.style.display='none';
+return;
+}
+
+const px=Math.min(STATE.accuracy*5,138);
+
+if(px<3){
+circle.style.display='none';
+return;
+}
+
+circle.style.display='';
+circle.setAttribute('r',px.toFixed(1));
+
+if(STATE.accuracy<=5){
+circle.setAttribute('stroke','rgba(0,230,118,.7)');
+circle.setAttribute('fill','rgba(0,230,118,.05)');
+}else if(STATE.accuracy<=15){
+circle.setAttribute('stroke','rgba(41,182,246,.7)');
+circle.setAttribute('fill','rgba(41,182,246,.06)');
+}else{
+circle.setAttribute('stroke','rgba(255,193,7,.6)');
+circle.setAttribute('fill','rgba(255,193,7,.05)');
+}
+}
+
+function onGPSError(err){
+
+const msgs={
+1:'تم رفض إذن الموقع',
+2:'الموقع غير متاح',
+3:'انتهت مهلة GPS'
+};
+
+setStatus('gps','err',msgs[err.code]||'خطأ');
+
+toast(
+'GPS: '+(msgs[err.code]||'خطأ')+
+(err.code===1?'\nفعّل إذن الموقع للتطبيق.':''),
+4000,
+'err'
+);
+}
+
+function startCompass(){
+
+if(compassListenersStarted)return;
+
+if(typeof window.DeviceOrientationEvent==='undefined'){
+setStatus('compass','err','غير مدعوم');
+return;
+}
+
+const handler=e=>{
+
+let heading=null;
+let accuracy=99;
+
+if(
+typeof e.webkitCompassHeading==='number'&&
+Number.isFinite(e.webkitCompassHeading)
+){
+heading=((e.webkitCompassHeading%360)+360)%360;
+
+if(
+typeof e.webkitCompassAccuracy==='number'&&
+Number.isFinite(e.webkitCompassAccuracy)
+){
+accuracy=Math.abs(e.webkitCompassAccuracy);
+}
+}
+
+else if(
+e.absolute===true&&
+typeof e.alpha==='number'
+){
+heading=((360-e.alpha)+CFG.MAGNETIC_DECLINATION+360)%360;
+accuracy=20;
+}
+
+else if(typeof e.alpha==='number'){
+heading=((360-e.alpha)+CFG.MAGNETIC_DECLINATION+360)%360;
+accuracy=35;
+}
+
+if(heading===null)return;
+
+STATE.compassEvents++;
+STATE.compassRaw=heading;
+
+const now=performance.now();
+
+let alpha=CFG.COMPASS_ALPHA_SLOW;
+
+if(STATE.compassPrev!==null){
+
+const dt=(now-STATE.compassPrevTime)/1000;
+
+if(dt>0&&dt<2){
+
+const movement=Math.abs(angleDiff(heading,STATE.compassPrev))/dt;
+
+if(movement>CFG.COMPASS_MOVE_THRESHOLD)
+alpha=CFG.COMPASS_ALPHA_FAST;
+}
+}
+
+STATE.compassPrev=heading;
+STATE.compassPrevTime=now;
+
+if(STATE.compassSmooth===null){
+
+STATE.compassSmooth=heading;
+
+}else{
+
+const diff=angleDiff(heading,STATE.compassSmooth);
+
+STATE.compassSmooth=
+(STATE.compassSmooth+alpha*diff+360)%360;
+}
+
+STATE.compassSmooth=
+(STATE.compassSmooth+360)%360;
+
+if(accuracy<15)
+STATE.compassCalibrated=true;
+
+const cs=$('compassStatus');
+
+if(STATE.headingMode!=='gps'){
+
+if(accuracy<15){
+cs.textContent='✓ بوصلة دقيقة';
+cs.className='compass-status';
+}else if(accuracy<30){
+cs.textContent='⚠ بوصلة جيدة';
+cs.className='compass-status warn';
+}else{
+cs.textContent='⚠ حرّك الهاتف بشكل 8 للمعايرة';
+cs.className='compass-status warn';
+}
+}
+
+setStatus(
+'compass',
+accuracy<15?'on':accuracy<30?'warn':'err',
+Math.round(STATE.compassSmooth)+'°'
+);
+
+updateArrow();
+updateReadout();
+};
+
+window.addEventListener(
+'deviceorientationabsolute',
+handler,
+true
+);
+
+window.addEventListener(
+'deviceorientation',
+handler,
+true
+);
+
+compassListenersStarted=true;
+}
+
+async function requestCompassPermission(){
+
+if(compassPermissionRequested)return;
+
+compassPermissionRequested=true;
+
+if(
+typeof DeviceOrientationEvent!=='undefined'&&
+typeof DeviceOrientationEvent.requestPermission==='function'
+){
+
+try{
+
+const result=
+await DeviceOrientationEvent.requestPermission();
+
+if(result==='granted'){
+startCompass();
+}else{
+setStatus('compass','err','مرفوض');
+toast('⚠️ تم رفض صلاحية البوصلة','3500','err');
+}
+
+}catch(e){
+compassPermissionRequested=false;
+}
+
+}else{
+startCompass();
+}
+}
+
+function getActiveHeading(){
+
+const speed=STATE.gps.speed||0;
+
+if(
+speed>=CFG.SPEED_ENTER_GPS&&
+gpsHeadingSmooth!==null
+){
+
+STATE.headingMode='gps';
+
+$('compassStatus').textContent=
+'✓ اتجاه الحركة GPS '+Math.round(speed*3.6)+' كم/س';
+
+$('compassStatus').className='compass-status gps';
+
+return gpsHeadingSmooth;
+}
+
+if(
+STATE.headingMode==='gps'&&
+speed>CFG.SPEED_EXIT_GPS&&
+gpsHeadingSmooth!==null
+){
+return gpsHeadingSmooth;
+}
+
+STATE.headingMode='compass';
+
+return STATE.compassSmooth;
+}
+
+function updateArrow(){
+
+if(!STATE.target||!STATE.pos)return;
+
+STATE.targetBearing=bearing(
+STATE.pos.lat,
+STATE.pos.lng,
+STATE.target.lat,
+STATE.target.lng
+);
+
+STATE.targetDistance=haversine(
+STATE.pos.lat,
+STATE.pos.lng,
+STATE.target.lat,
+STATE.target.lng
+);
+
+const speed=STATE.gps.speed||0;
+const gpsHdg=STATE.gps.heading;
+
+if(
+gpsHdg!==null&&
+Number.isFinite(gpsHdg)&&
+speed>=.7
+){
+
+if(gpsHeadingSmooth===null){
+
+gpsHeadingSmooth=gpsHdg;
+
+}else{
+
+const d=angleDiff(gpsHdg,gpsHeadingSmooth);
+
+gpsHeadingSmooth=
+(gpsHeadingSmooth+d*CFG.GPS_HEADING_FILTER+360)%360;
+}
+}
+
+const heading=getActiveHeading();
+
+$('bearingNum').textContent=
+Math.round(STATE.targetBearing)+'°';
+
+$('bearingDir').textContent=
+dirName(STATE.targetBearing);
+
+if(heading===null){
+
+setGuidance('انتظر اتجاه البوصلة...','warn');
+return;
+}
+
+const targetRot=
+(STATE.targetBearing-heading+360)%360;
+
+const arrowEl=$('arrowGroup');
+
+let currentRot=
+parseFloat(arrowEl.dataset.rot);
+
+if(!Number.isFinite(currentRot)){
+
+arrowEl.dataset.rot=targetRot;
+arrowEl.style.transform=
+'rotate('+targetRot+'deg)';
+
+return;
+}
+
+let diff=angleDiff(targetRot,currentRot);
+
+if(Math.abs(diff)<CFG.ARROW_DEADZONE)return;
+
+let smoothing=CFG.ARROW_SMOOTHING;
+
+if(speed>3)smoothing=.65;
+else if(speed>1)smoothing=.55;
+
+let newRot=currentRot+diff*smoothing;
+
+newRot=((newRot%360)+360)%360;
+
+arrowEl.dataset.rot=newRot;
+
+arrowEl.style.transform=
+'rotate('+newRot+'deg)';
+}
+
+function updateTargetName(){
+
+const el=$('targetName');
+
+if(!STATE.target){
+
+el.className='target-name empty';
+el.querySelector('.icon').textContent='📍';
+el.querySelector('.text').textContent='اختر وجهة من القائمة';
+
+}else{
+
+el.className='target-name';
+el.querySelector('.icon').textContent='🎯';
+el.querySelector('.text').textContent=STATE.target.name;
+}
+}
+
+function updateReadout(){
+
+updateTargetName();
+
+updateAudioState();
+
+if(!STATE.target){
+
+$('distanceNum').textContent='--';
+$('distanceUnit').textContent='';
+$('bearingNum').textContent='---°';
+$('bearingDir').textContent='--';
+
+if(STATE.compassSmooth!==null){
+setGuidance(
+'🧭 الاتجاه الحالي: '+
+Math.round(STATE.compassSmooth)+'° — '+
+dirName(STATE.compassSmooth),
+''
+);
+}else{
+setGuidance('📍 احفظ موقعاً أو أضف يدوياً','');
+}
+return;
+}
+
+if(!STATE.pos){
+
+$('distanceNum').textContent='--';
+$('distanceUnit').textContent='';
+$('bearingNum').textContent='---°';
+$('bearingDir').textContent='--';
+
+setGuidance('📡 انتظر إشارة GPS...','warn');
+return;
+}
+
+const d=STATE.targetDistance;
+
+if(d<1000){
+
+$('distanceNum').textContent=Math.round(d);
+$('distanceUnit').textContent='م';
+
+}else{
+
+$('distanceNum').textContent=(d/1000).toFixed(2);
+$('distanceUnit').textContent='كم';
+}
+
+if(d<=10){
+
+setGuidance('🎯 وصلت!','on');
+return;
+}
+
+const activeHeading=getActiveHeading();
+
+if(activeHeading===null){
+
+setGuidance('الاتجاه غير جاهز','warn');
+return;
+}
+
+let diff=angleDiff(
+STATE.targetBearing,
+activeHeading
+);
+
+const abs=Math.abs(diff);
+
+let msg,cls;
+
+if(abs<10){
+
+msg='✅ على المسار الصحيح';
+cls='on';
+
+}else if(abs<45){
+
+msg=diff>0?
+'↻ استدر يميناً '+Math.round(abs)+'°':
+'↺ استدر يساراً '+Math.round(abs)+'°';
+
+cls='warn';
+
+}else{
+
+msg=diff>0?
+'↻ استدر يميناً '+Math.round(abs)+'°':
+'↺ استدر يساراً '+Math.round(abs)+'°';
+
+cls='err';
+}
+
+setGuidance(msg,cls);
+}
+
+function setGuidance(msg,cls){
+
+const el=$('guidanceState');
+
+el.textContent=msg;
+el.className='guidance-state'+
+(cls?' '+cls:'');
+}
+
+function saveWaypoints(){
+
+try{
+localStorage.setItem(
+CFG.WAYPOINTS_KEY,
+JSON.stringify(STATE.waypoints)
+);
+}catch(e){}
+}
+
+function loadWaypoints(){
+
+try{
+
+const data=
+localStorage.getItem(CFG.WAYPOINTS_KEY);
+
+if(data)
+STATE.waypoints=JSON.parse(data);
+
+}catch(e){}
+}
+
+function shareLocationWhatsApp(){
+
+if(!STATE.pos){
+
+toast(
+'⚠️ لا يوجد GPS — انتظر الإشارة',
+3000,
+'err'
+);
+
+return;
+}
+
+const lat=STATE.pos.lat.toFixed(6);
+const lng=STATE.pos.lng.toFixed(6);
+const acc=Math.round(STATE.accuracy);
+
+const alt=
+STATE.gps.altitude!==null?
+Math.round(STATE.gps.altitude)+'م':
+'--';
+
+const time=
+new Date().toLocaleString('ar-EG');
+
+const link=
+`https://maps.google.com/?q=${lat},${lng}`;
+
+const msg=
+`📍 موقعي الحالي\n\n`+
+`${link}\n\n`+
+`الإحداثيات: ${lat}, ${lng}\n`+
+`الدقة: ±${acc} م\n`+
+`الارتفاع: ${alt}\n`+
+`الوقت: ${time}`;
+
+const waUrl=
+`https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+window.open(waUrl,'_blank');
+
+toast(
+'📲 فتح واتساب',
+2500,
+'ok'
+);
+}
+
+function openSaveDialog(){
+
+if(!STATE.pos){
+
+toast('لا يوجد GPS','2500','err');
+return;
+}
+
+if(STATE.accuracy>30){
+
+toast(
+'الإشارة ضعيفة (±'+
+Math.round(STATE.accuracy)+
+'م)\nانتظر تحسن GPS',
+3500,
+'err'
+);
+
+return;
+}
+
+if(STATE.stability>CFG.STABILITY_LIMIT){
+
+toast(
+'⚠️ الموقع غير مستقر\n'+
+'الانتشار الحالي '+STATE.stability.toFixed(1)+'م\n'+
+'ثبت الهاتف وانتظر قليلاً',
+4000,
+'warn'
+);
+
+return;
+}
+
+$('saveQuality').textContent=
+'🟢 GPS ±'+
+Math.round(STATE.accuracy)+
+'م — ثبات فعلي '+
+STATE.stability.toFixed(1)+'م';
+
+$('saveName').value='';
+
+STATE.selectedCategory='gold';
+STATE.foundGold=false;
+
+$('saveProgress').classList.remove('show');
+$('saveProgressBar').style.width='0%';
+$('saveProgressBar').className='save-progress-bar';
+$('saveProgressText').textContent=
+'0/'+CFG.SAMPLES_NEEDED;
+
+$('saveConfirm').textContent='💾 حفظ';
+$('saveConfirm').disabled=false;
+
+$('saveDialog').classList.add('show');
+
+setTimeout(
+()=>$('saveName').focus(),
+200
+);
+}
+
+function closeSaveDialog(){
+
+if(STATE.saveInProgress)return;
+
+$('saveDialog').classList.remove('show');
+
+STATE.saveSamples=[];
+STATE.rejectedCount=0;
+STATE.consecutiveRejects=0;
+}
+
+function updateSaveProgress(){
+
+const pct=
+STATE.saveSamples.length/
+CFG.SAMPLES_NEEDED*100;
+
+const bar=$('saveProgressBar');
+
+bar.style.width=Math.min(pct,100)+'%';
+
+const avgAcc=
+STATE.saveSamples.length?
+avg(STATE.saveSamples.map(s=>s.acc)):
+0;
+
+bar.className=
+'save-progress-bar '+
+(
+avgAcc<=5?'good':
+avgAcc<=12?'': 
+avgAcc<=20?'warn':
+'bad'
+);
+
+const rejectTag=
+STATE.rejectedCount>0?
+' • ❌'+STATE.rejectedCount:
+'';
+
+$('saveProgressText').textContent=
+STATE.saveSamples.length+
+'/'+CFG.SAMPLES_NEEDED+
+(
+STATE.saveSamples.length?
+' (±'+avgAcc.toFixed(1)+'م)':
+''
+)+
+rejectTag;
+
+$('saveConfirm').textContent=
+'⏳ '+
+STATE.saveSamples.length+
+'/'+
+CFG.SAMPLES_NEEDED;
+}
+
+function abortSave(reason){
+
+STATE.saveInProgress=false;
+STATE.saveSamples=[];
+STATE.rejectedCount=0;
+STATE.consecutiveRejects=0;
+
+$('saveConfirm').textContent='💾 حفظ';
+$('saveConfirm').disabled=false;
+
+$('saveProgress').classList.remove('show');
+
+toast(reason,4500,'err');
+
+if(navigator.vibrate)
+navigator.vibrate([200,100,200]);
+}
+
+function confirmSave(){
+
+if(STATE.saveInProgress)return;
+
+if(!STATE.pos){
+
+toast('لا يوجد GPS','2500','err');
+return;
+}
+
+if(STATE.accuracy>CFG.MIN_ACCURACY_SAVE){
+
+toast(
+'الدقة الحالية ±'+
+Math.round(STATE.accuracy)+
+'م — انتظر تحسن الإشارة',
+3500,
+'warn'
+);
+
+return;
+}
+
+const name=
+$('saveName').value.trim()||
+'موقع';
+
+const cat=
+STATE.selectedCategory;
+
+const foundGold=
+STATE.foundGold;
+
+STATE.saveSamples=[];
+STATE.rejectedCount=0;
+STATE.consecutiveRejects=0;
+STATE.saveInProgress=true;
+
+const startTime=Date.now();
+
+let lastSampleTimestamp=0;
+let lastSampleLat=null;
+let lastSampleLng=null;
+
+toast(
+'📡 جمع '+CFG.SAMPLES_NEEDED+
+' قراءة GPS مستقرة...',
+3500
+);
+
+$('saveConfirm').textContent='⏳ جاري...';
+$('saveConfirm').disabled=true;
+$('saveProgress').classList.add('show');
+
+const interval=setInterval(()=>{
+
+if(!STATE.saveInProgress){
+
+clearInterval(interval);
+return;
+}
+
+if(
+Date.now()-startTime>
+CFG.MAX_SAMPLE_TIME
+&&
+STATE.saveSamples.length<
+CFG.MIN_SAMPLES_NEEDED
+){
+
+clearInterval(interval);
+
+abortSave(
+'⚠️ لم نحصل على قراءات GPS كافية\n'+
+'انتقل إلى مكان مفتوح وحاول مرة أخرى'
+);
+
+return;
+}
+
+if(!STATE.pos||
+STATE.accuracy>CFG.MIN_ACCURACY_SAVE){
+
+updateSaveProgress();
+return;
+}
+
+const currentTimestamp=
+STATE.gps.lastTimestamp||0;
+
+if(
+currentTimestamp===lastSampleTimestamp
+){
+
+updateSaveProgress();
+return;
+}
+
+const lat=STATE.pos.lat;
+const lng=STATE.pos.lng;
+
+if(lastSampleLat!==null){
+
+const movement=
+haversine(
+lastSampleLat,
+lastSampleLng,
+lat,
+lng
+);
+
+if(movement>CFG.MAX_JUMP_METERS){
+
+STATE.rejectedCount++;
+STATE.consecutiveRejects++;
+
+if(
+STATE.consecutiveRejects>=
+CFG.MAX_CONSECUTIVE_REJECTS
+){
+
+clearInterval(interval);
+
+abortSave(
+'⚠️ GPS غير مستقر\n'+
+'حدثت قفزات متكررة في الموقع'
+);
+
+return;
+}
+
+updateSaveProgress();
+return;
+}
+}
+
+STATE.consecutiveRejects=0;
+
+STATE.saveSamples.push({
+lat,
+lng,
+acc:STATE.accuracy,
+alt:STATE.gps.altitude,
+spd:STATE.gps.speed,
+hdg:STATE.gps.heading,
+t:currentTimestamp||Date.now()
+});
+
+lastSampleTimestamp=currentTimestamp;
+lastSampleLat=lat;
+lastSampleLng=lng;
+
+updateSaveProgress();
+
+const enough=
+STATE.saveSamples.length>=CFG.SAMPLES_NEEDED;
+
+const timedOut=
+Date.now()-startTime>
+CFG.MAX_SAMPLE_TIME&&
+STATE.saveSamples.length>=CFG.MIN_SAMPLES_NEEDED;
+
+if(enough||timedOut){
+
+clearInterval(interval);
+
+finalizeSave(
+name,
+cat,
+foundGold
+);
+}
+
+},CFG.SAMPLE_INTERVAL);
+}
+
+function finalizeSave(name,cat,foundGold){
+
+const samples=STATE.saveSamples;
+
+if(samples.length<CFG.MIN_SAMPLES_NEEDED){
+
+toast(
+'قراءات غير كافية ('+
+samples.length+')',
+3000,
+'err'
+);
+
+STATE.saveInProgress=false;
+
+$('saveConfirm').textContent='💾 حفظ';
+$('saveConfirm').disabled=false;
+$('saveProgress').classList.remove('show');
+
+return;
+}
+
+let sumW=0;
+let sumLat=0;
+let sumLng=0;
+
+for(const s of samples){
+
+const w=
+1/Math.max(
+s.acc*s.acc,
+1
+);
+
+sumW+=w;
+sumLat+=s.lat*w;
+sumLng+=s.lng*w;
+}
+
+const avgLat=sumLat/sumW;
+const avgLng=sumLng/sumW;
+
+const accs=samples.map(s=>s.acc);
+
+const medAcc=median(accs);
+const avgAcc=avg(accs);
+
+const distsFromCenter=
+samples.map(s=>
+haversine(
+s.lat,
+s.lng,
+avgLat,
+avgLng
+)
+);
+
+const spread=
+Math.sqrt(
+avg(
+distsFromCenter.map(d=>d*d)
+)
+);
+
+const maxSpread=
+Math.max(...distsFromCenter);
+
+let totalDist=0;
+
+for(let i=1;i<samples.length;i++){
+
+totalDist+=haversine(
+samples[i-1].lat,
+samples[i-1].lng,
+samples[i].lat,
+samples[i].lng
+);
+}
+
+const avgDist=
+samples.length>1?
+totalDist/(samples.length-1):
+0;
+
+const timeDiffs=[];
+
+for(let i=1;i<samples.length;i++){
+
+timeDiffs.push(
+samples[i].t-
+samples[i-1].t
+);
+}
+
+const avgTimeDiff=avg(timeDiffs);
+
+const alts=
+samples
+.map(s=>s.alt)
+.filter(a=>a!==null&&Number.isFinite(a));
+
+const avgAlt=
+alts.length?
+avg(alts):
+null;
+
+let quality;
+
+if(
+medAcc<=5&&
+spread<=2
+){
+quality='ممتازة';
+}else if(
+medAcc<=10&&
+spread<=5
+){
+quality='عالية';
+}else if(
+medAcc<=20&&
+spread<=10
+){
+quality='جيدة';
+}else{
+quality='مقبولة';
+}
+
+const waypoint={
+id:'wp_'+Date.now(),
+
+lat:avgLat,
+lng:avgLng,
+
+accuracy:medAcc,
+avgAccuracy:avgAcc,
+
+variance:spread,
+maxSpread,
+
+avgDist,
+avgTimeDiff,
+
+altitude:avgAlt,
+
+samples:samples.length,
+rejected:STATE.rejectedCount,
+
+quality,
+
+name:name.trim(),
+category:cat,
+foundGold,
+
+timestamp:Date.now()
+};
+
+STATE.waypoints.push(waypoint);
+
+saveWaypoints();
+
+STATE.target=waypoint;
+
+const arrowEl=$('arrowGroup');
+
+arrowEl.dataset.rot='';
+arrowEl.style.transform='';
+
+gpsHeadingSmooth=null;
+
+STATE.saveInProgress=false;
+STATE.saveSamples=[];
+
+const rejectedMsg=
+STATE.rejectedCount>0?
+' • رُفض '+STATE.rejectedCount:
+'';
+
+STATE.rejectedCount=0;
+STATE.consecutiveRejects=0;
+
+$('saveDialog').classList.remove('show');
+$('saveProgress').classList.remove('show');
+
+$('saveConfirm').textContent='💾 حفظ';
+$('saveConfirm').disabled=false;
+
+updateReadout();
+updateArrow();
+renderWaypoints();
+
+const goldTag=
+foundGold?' 💰':'';
+
+toast(
+'✅ '+name+goldTag+'\n'+
+'دقة '+quality+
+' • GPS ±'+medAcc.toFixed(1)+'م\n'+
+'انتشار '+spread.toFixed(1)+'م'+
+' • '+samples.length+' عينة'+
+rejectedMsg,
+5000,
+'ok'
+);
+
+if(navigator.vibrate)
+navigator.vibrate([100,50,100]);
+
+AUDIO.lastMinDist=null;
+AUDIO.hasReached=false;
+AUDIO.lastZone=null;
+AUDIO.lastDeviationState=null;
+soundStart();
+}
+
+function openManualDialog(){
+
+$('manualName').value='';
+$('manualLat').value='';
+$('manualLng').value='';
+
+STATE.selectedManualCategory='gold';
+
+$('manualDialog').classList.add('show');
+
+setTimeout(
+()=>$('manualName').focus(),
+200
+);
+}
+
+function closeManualDialog(){
+$('manualDialog').classList.remove('show');
+}
+
+function confirmManual(){
+
+const name=$('manualName').value.trim();
+
+const latStr=
+$('manualLat').value
+.trim()
+.replace(/,/g,'.')
+.replace(/\s/g,'');
+
+const lngStr=
+$('manualLng').value
+.trim()
+.replace(/,/g,'.')
+.replace(/\s/g,'');
+
+const cat=
+STATE.selectedManualCategory;
+
+if(!name){
+
+toast('⚠️ أدخل اسم الموقع',2500,'err');
+$('manualName').focus();
+return;
+}
+
+if(!latStr||!lngStr){
+
+toast('⚠️ أدخل الإحداثيات',2500,'err');
+return;
+}
+
+const lat=parseFloat(latStr);
+const lng=parseFloat(lngStr);
+
+if(!Number.isFinite(lat)||!Number.isFinite(lng)){
+
+toast('⚠️ أرقام غير صالحة',2500,'err');
+return;
+}
+
+if(lat<-90||lat>90){
+
+toast(
+'⚠️ خط العرض يجب بين -90 و90',
+3000,
+'err'
+);
+
+return;
+}
+
+if(lng<-180||lng>180){
+
+toast(
+'⚠️ خط الطول يجب بين -180 و180',
+3000,
+'err'
+);
+
+return;
+}
+
+const waypoint={
+id:'wp_manual_'+Date.now(),
+
+lat,
+lng,
+
+accuracy:0,
+variance:0,
+
+quality:'يدوية',
+
+name,
+category:cat,
+
+foundGold:false,
+
+timestamp:Date.now(),
+
+manual:true
+};
+
+STATE.waypoints.push(waypoint);
+
+saveWaypoints();
+
+STATE.target=waypoint;
+
+const arrowEl=$('arrowGroup');
+
+arrowEl.dataset.rot='';
+arrowEl.style.transform='';
+
+gpsHeadingSmooth=null;
+
+closeManualDialog();
+
+renderWaypoints();
+updateReadout();
+updateArrow();
+
+toast(
+'📍 أُضيف: '+name,
+3000,
+'ok'
+);
+
+if(navigator.vibrate)
+navigator.vibrate(150);
+
+AUDIO.lastMinDist=null;
+AUDIO.hasReached=false;
+AUDIO.lastZone=null;
+AUDIO.lastDeviationState=null;
+soundStart();
+}
+
+const CAT_ICONS={
+gold:'💰',
+water:'💧',
+car:'🚗',
+home:'🏠',
+hole:'🕳️',
+other:'📌'
+};
+
+function escapeHtml(s){
+
+return String(s)
+.replace(/&/g,'&amp;')
+.replace(/</g,'&lt;')
+.replace(/>/g,'&gt;')
+.replace(/"/g,'&quot;')
+.replace(/'/g,'&#39;');
+}
+
+function renderWaypoints(){
+
+const container=$('waypointsList');
+
+if(!STATE.waypoints.length){
+
+container.innerHTML=`
+<div class="empty-state">
+<div class="big-icon">📍</div>
+<p>لا مواقع محفوظة بعد</p>
+<p style="margin-top:10px;font-size:12px">
+اضغط "حفظ" أو "✏️ إدخال يدوي"<br>
+لإضافة موقع
+</p>
+</div>`;
+
+return;
+}
+
+const sorted=
+STATE.waypoints
+.slice()
+.sort((a,b)=>{
+
+if(!STATE.pos)
+return b.timestamp-a.timestamp;
+
+const da=haversine(
+STATE.pos.lat,
+STATE.pos.lng,
+a.lat,
+a.lng
+);
+
+const db=haversine(
+STATE.pos.lat,
+STATE.pos.lng,
+b.lat,
+b.lng
+);
+
+return da-db;
+});
+
+container.innerHTML=
+sorted.map(wp=>{
+
+const dist=
+STATE.pos?
+haversine(
+STATE.pos.lat,
+STATE.pos.lng,
+wp.lat,
+wp.lng
+):
+null;
+
+let distStr='--';
+
+if(dist!==null){
+
+distStr=
+dist<1000?
+Math.round(dist)+' م':
+dist<10000?
+(dist/1000).toFixed(2)+' كم':
+(dist/1000).toFixed(1)+' كم';
+}
+
+const isActive=
+STATE.target&&
+STATE.target.id===wp.id;
+
+const icon=
+CAT_ICONS[wp.category]||'📌';
+
+const goldTag=
+wp.foundGold?
+'<span class="gold-badge">💰 ذهب</span>':
+'';
+
+const manualTag=
+wp.manual?' ✏️':'';
+
+const cls=
+wp.foundGold?
+'gold-found':
+(wp.category||'other');
+
+let extraInfo='';
+
+if(!wp.manual&&wp.samples){
+
+const qClass=
+wp.quality==='ممتازة'||
+wp.quality==='عالية'?
+'🟢':
+wp.quality==='جيدة'?
+'🟡':
+'🟠';
+
+extraInfo=
+` • ${qClass}${wp.quality} • ${wp.samples}عينة`;
+}
+
+return`
+<div class="waypoint-item ${cls}" data-id="${escapeHtml(wp.id)}">
+<div class="wp-icon">${icon}</div>
+<div class="wp-info">
+<div class="wp-name">
+${goldTag}${escapeHtml(wp.name)}${manualTag}
+${isActive?'🎯':''}
+</div>
+<div class="wp-meta">
+${Number(wp.lat).toFixed(6)}, ${Number(wp.lng).toFixed(6)}
+${extraInfo}
+</div>
+<div class="wp-dist">${distStr}</div>
+</div>
+<button class="wp-copy-btn" data-copy="${escapeHtml(wp.id)}">📋 نسخ</button>
+<button class="wp-del-btn" data-del="${escapeHtml(wp.id)}">✕</button>
+</div>`;
+}).join('');
+
+container
+.querySelectorAll('.waypoint-item')
+.forEach(item=>{
+
+item.addEventListener('click',e=>{
+
+if(
+e.target.closest('[data-copy]')||
+e.target.closest('[data-del]')
+)return;
+
+selectTarget(item.dataset.id);
+});
+});
+
+container
+.querySelectorAll('[data-copy]')
+.forEach(btn=>{
+
+btn.addEventListener('click',e=>{
+
+e.stopPropagation();
+
+copyCoordinates(btn.dataset.copy);
+});
+});
+
+container
+.querySelectorAll('[data-del]')
+.forEach(btn=>{
+
+btn.addEventListener('click',e=>{
+
+e.stopPropagation();
+
+deleteWaypoint(btn.dataset.del);
+});
+});
+}
+
+function copyCoordinates(id){
+
+const wp=
+STATE.waypoints.find(w=>w.id===id);
+
+if(!wp)return;
+
+const coordsText=
+wp.lat.toFixed(6)+', '+
+wp.lng.toFixed(6);
+
+const fullText=
+wp.name+'\n'+coordsText;
+
+if(
+navigator.clipboard&&
+navigator.clipboard.writeText
+){
+
+navigator.clipboard
+.writeText(fullText)
+.then(()=>
+toast(
+'✅ تم نسخ:\n'+coordsText,
+3000,
+'ok'
+)
+)
+.catch(()=>
+fallbackCopy(fullText)
+);
+
+}else{
+
+fallbackCopy(fullText);
+}
+}
+
+function fallbackCopy(text){
+
+const ta=document.createElement('textarea');
+
+ta.value=text;
+
+ta.style.cssText=
+'position:fixed;left:-9999px';
+
+document.body.appendChild(ta);
+
+ta.select();
+
+try{
+
+document.execCommand('copy');
+
+toast('✅ تم النسخ',2000,'ok');
+
+}catch(e){
+
+toast('⚠️ تعذر النسخ',2500,'err');
+}
+
+document.body.removeChild(ta);
+}
+
+function selectTarget(id){
+
+const wp=
+STATE.waypoints.find(w=>w.id===id);
+
+if(!wp)return;
+
+STATE.target=wp;
+
+const arrowEl=$('arrowGroup');
+
+arrowEl.dataset.rot='';
+arrowEl.style.transform='';
+
+gpsHeadingSmooth=null;
+
+AUDIO.lastMinDist=null;
+AUDIO.hasReached=false;
+AUDIO.lastZone=null;
+AUDIO.lastDeviationState=null;
+soundStart();
+
+closePanel();
+
+updateReadout();
+updateArrow();
+
+const dist=
+STATE.pos?
+haversine(
+STATE.pos.lat,
+STATE.pos.lng,
+wp.lat,
+wp.lng
+):
+0;
+
+toast(
+'🎯 '+wp.name+
+' — '+Math.round(dist)+'م',
+2500,
+'ok'
+);
+}
+
+function deleteWaypoint(id){
+
+const wp=
+STATE.waypoints.find(w=>w.id===id);
+
+if(!wp)return;
+
+if(!confirm('حذف "'+wp.name+'"?'))
+return;
+
+STATE.waypoints=
+STATE.waypoints.filter(w=>w.id!==id);
+
+saveWaypoints();
+
+if(
+STATE.target&&
+STATE.target.id===id
+){
+
+STATE.target=null;
+
+const arrowEl=$('arrowGroup');
+
+arrowEl.dataset.rot='';
+arrowEl.style.transform='';
+
+gpsHeadingSmooth=null;
+
+soundCancelTarget();
+
+updateReadout();
+}
+
+renderWaypoints();
+
+toast('تم الحذف',1500,'');
+}
+
+function setStatus(type,cls,val){
+
+const dot=$(type+'Dot');
+const valEl=$(type+'Val');
+
+if(dot)
+dot.className='status-dot '+cls;
+
+if(valEl)
+valEl.textContent=val;
+}
+
+function openPanel(){
+
+$('waypointsPanel')
+.classList.add('show');
+
+renderWaypoints();
+}
+
+function closePanel(){
+
+$('waypointsPanel')
+.classList.remove('show');
+}
+
+function drawTicks(){
+
+const g=$('ticks');
+
+const cx=150,cy=150;
+const r1=128,r2=138,r3=122;
+
+let html='';
+
+for(let deg=0;deg<360;deg+=5){
+
+const rad=(deg-90)*Math.PI/180;
+
+const isMajor=deg%45===0;
+const isMed=deg%15===0;
+
+let ir1=r1;
+
+if(isMajor)ir1=r3;
+else if(isMed)ir1=(r1+r3)/2;
+
+const x1=cx+Math.cos(rad)*ir1;
+const y1=cy+Math.sin(rad)*ir1;
+
+const x2=cx+Math.cos(rad)*r2;
+const y2=cy+Math.sin(rad)*r2;
+
+html+=`
+<line
+class="${isMajor?'tick major':'tick'}"
+x1="${x1.toFixed(1)}"
+y1="${y1.toFixed(1)}"
+x2="${x2.toFixed(1)}"
+y2="${y2.toFixed(1)}">
+</line>`;
+}
+
+const labels=[
+{deg:0,text:'شمال',north:true},
+{deg:45,text:'شمال شرق'},
+{deg:90,text:'شرق'},
+{deg:135,text:'جنوب شرق'},
+{deg:180,text:'جنوب'},
+{deg:225,text:'جنوب غرب'},
+{deg:270,text:'غرب'},
+{deg:315,text:'شمال غرب'}
+];
+
+for(const l of labels){
+
+const rad=(l.deg-90)*Math.PI/180;
+
+const isMain=
+l.deg===0||
+l.deg===90||
+l.deg===180||
+l.deg===270;
+
+const radius=isMain?103:100;
+
+const x=cx+Math.cos(rad)*radius;
+const y=cy+Math.sin(rad)*radius;
+
+const fontSize=isMain?11:7;
+
+html+=`
+<text
+class="tick-label${l.north?' north':''}"
+x="${x.toFixed(1)}"
+y="${y.toFixed(1)}"
+style="font-size:${fontSize}px;font-weight:${
+isMain?900:700
+}">
+${l.text}
+</text>`;
+}
+
+g.innerHTML=html;
+}
+
+let lastReadoutUpdate=0;
+
+function loop(ts){
+
+if(STATE.target&&STATE.pos){
+updateArrow();
+}
+
+if(ts-lastReadoutUpdate>200){
+
+updateReadout();
+updateTelemetry();
+
+if(!STATE.target&&STATE.compassSmooth!==null){
+setGuidance(
+'🧭 الاتجاه: '+Math.round(STATE.compassSmooth)+'° — '+
+dirName(STATE.compassSmooth),
+''
+);
+}
+
+lastReadoutUpdate=ts;
+}
+
+STATE.rafId=
+requestAnimationFrame(loop);
+}
+
+function bindEvents(){
+
+$('btnSaveHere')
+.addEventListener(
+'click',
+openSaveDialog
+);
+
+$('btnShareWA')
+.addEventListener(
+'click',
+shareLocationWhatsApp
+);
+
+$('btnList')
+.addEventListener(
+'click',
+openPanel
+);
+
+$('panelClose')
+.addEventListener(
+'click',
+closePanel
+);
+
+$('btnAddManual')
+.addEventListener(
+'click',
+openManualDialog
+);
+
+$('saveCancel')
+.addEventListener(
+'click',
+closeSaveDialog
+);
+
+$('saveConfirm')
+.addEventListener(
+'click',
+confirmSave
+);
+
+$('saveName')
+.addEventListener(
+'keydown',
+e=>{
+if(e.key==='Enter')
+confirmSave();
+}
+);
+
+$('manualCancel')
+.addEventListener(
+'click',
+closeManualDialog
+);
+
+$('manualConfirm')
+.addEventListener(
+'click',
+confirmManual
+);
+
+$('manualName')
+.addEventListener(
+'keydown',
+e=>{
+
+if(e.key==='Enter'){
+
+e.preventDefault();
+
+$('manualLat').focus();
+}
+}
+);
+
+$('manualLat')
+.addEventListener(
+'keydown',
+e=>{
+
+if(e.key==='Enter'){
+
+e.preventDefault();
+
+$('manualLng').focus();
+}
+}
+);
+
+$('manualLng')
+.addEventListener(
+'keydown',
+e=>{
+
+if(e.key==='Enter'){
+
+e.preventDefault();
+
+confirmManual();
+}
+}
+);
+
+$('saveDialog')
+.addEventListener(
+'click',
+e=>{
+
+if(
+e.target===$('saveDialog')&&
+!STATE.saveInProgress
+){
+
+closeSaveDialog();
+}
+}
+);
+
+$('manualDialog')
+.addEventListener(
+'click',
+e=>{
+
+if(e.target===$('manualDialog'))
+closeManualDialog();
+}
+);
+
+const startOnce=()=>{
+
+initAudio();
+requestCompassPermission();
+
+document.body.removeEventListener(
+'touchstart',
+startOnce
+);
+
+document.body.removeEventListener(
+'click',
+startOnce
+);
+};
+
+document.body.addEventListener(
+'touchstart',
+startOnce,
+{passive:true}
+);
+
+document.body.addEventListener(
+'click',
+startOnce
+);
+
+const resumeOnce=()=>{
+initAudio();
+document.body.removeEventListener('touchstart',resumeOnce);
+document.body.removeEventListener('click',resumeOnce);
+document.body.removeEventListener('keydown',resumeOnce);
+};
+
+document.body.addEventListener('touchstart',resumeOnce,{passive:true});
+document.body.addEventListener('click',resumeOnce);
+document.body.addEventListener('keydown',resumeOnce);
+}
+
+let wakeLockObj=null;
+
+async function requestWakeLock(){
+
+if(!('wakeLock' in navigator))
+return;
+
+try{
+
+wakeLockObj=
+await navigator.wakeLock.request('screen');
+
+wakeLockObj.addEventListener(
+'release',
+()=>{
+
+wakeLockObj=null;
+
+if(
+document.visibilityState===
+'visible'
+){
+
+setTimeout(
+requestWakeLock,
+500
+);
+}
+}
+);
+
+}catch(e){}
+}
+
+document.addEventListener(
+'visibilitychange',
+()=>{
+
+if(
+document.visibilityState===
+'visible'
+){
+
+if(!wakeLockObj)
+requestWakeLock();
+}
+}
+);
+
+function init(){
+
+initAudio();
+
+drawTicks();
+
+loadCachedDeclination();
+
+loadWaypoints();
+
+bindEvents();
+
+updateTargetName();
+
+updateDeclinationDisplay();
+
+startGPS();
+
+requestCompassPermission();
+
+setTimeout(()=>{
+if(!compassListenersStarted){
+compassPermissionRequested=false;
+requestCompassPermission();
+}
+},2000);
+
+setTimeout(()=>{
+if(!compassListenersStarted){
+compassPermissionRequested=false;
+requestCompassPermission();
+}
+},5000);
+
+requestWakeLock();
+
+STATE.rafId=
+requestAnimationFrame(loop);
+
+setTimeout(()=>{
+
+if(!STATE.pos){
+
+toast(
+'📡 جاري البحث عن GPS الحقيقي...',
+3500
+);
+
+}else{
+
+toast(
+'👋 GoldQibla v10 جاهز',
+3000,
+'ok'
+);
+}
+
+},1500);
+
+setInterval(()=>{
+
+if(
+$('waypointsPanel')
+.classList
+.contains('show')
+){
+
+renderWaypoints();
+}
+
+},5000);
+}
+
+if(document.readyState==='loading'){
+
+document.addEventListener(
+'DOMContentLoaded',
+init
+);
+
+}else{
+
+init();
+}
+
+window.addEventListener(
+'beforeunload',
+()=>{
+
+saveWaypoints();
+
+if(
+STATE.watchId!==null&&
+navigator.geolocation
+){
+
+try{
+navigator.geolocation.clearWatch(
+STATE.watchId
+);
+}catch(e){}
+}
+}
+);
+
+})();
+</script>
+</body>
+</html>
